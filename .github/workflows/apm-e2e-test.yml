@@ -179,22 +179,22 @@ jobs:
           --service-name sample-application-${{ env.TESTING_ID }}
           --rollup'
 
-      - name: Publish metric on test result
-        if: always()
-        run: |
-          if [[ "${{ steps.metric-validation.outcome }}" == "success" && "${{ steps.trace-validation.outcome }}" == "success" ]]; then
-            aws cloudwatch put-metric-data --namespace 'CWAgentOperator/GitHubActions' \
-            --metric-name Success \
-            --dimensions repository=${{ github.repository }},branch=${{ github.ref_name }},workflow=${{ inputs.caller-workflow-name }} \
-            --value 1.0 \
-            --region us-west-2
-          else
-            aws cloudwatch put-metric-data --namespace 'CWAgentOperator/GitHubActions' \
-            --metric-name Success \
-            --dimensions repository=${{ github.repository }},branch=${{ github.ref_name }},workflow=${{ inputs.caller-workflow-name }} \
-            --value 0.0 \
-            --region us-west-2
-          fi
+#       - name: Publish metric on test result
+#         if: always()
+#         run: |
+#           if [[ "${{ steps.metric-validation.outcome }}" == "success" && "${{ steps.trace-validation.outcome }}" == "success" ]]; then
+#             aws cloudwatch put-metric-data --namespace 'CWAgentOperator/GitHubActions' \
+#             --metric-name Success \
+#             --dimensions repository=${{ github.repository }},branch=${{ github.ref_name }},workflow=${{ inputs.caller-workflow-name }} \
+#             --value 1.0 \
+#             --region us-west-2
+#           else
+#             aws cloudwatch put-metric-data --namespace 'CWAgentOperator/GitHubActions' \
+#             --metric-name Success \
+#             --dimensions repository=${{ github.repository }},branch=${{ github.ref_name }},workflow=${{ inputs.caller-workflow-name }} \
+#             --value 0.0 \
+#             --region us-west-2
+#           fi
 
       # Clean up Procedures
 
