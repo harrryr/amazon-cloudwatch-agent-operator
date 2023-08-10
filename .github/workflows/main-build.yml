@@ -1,0 +1,39 @@
+## This workflow aims to run the end-to-end tests in canary fashion to
+## test the prod artifacts for APM enablement.
+name: APM Enablement E2E canary testing
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  APM_REGISTRY: 160148376629.dkr.ecr.us-west-2.amazonaws.com
+  APM_PREVIEW_REPO: aws-apm-preview
+
+jobs:
+  get-adot-image-name:
+    runs-on: ubuntu-latest
+    outputs:
+      imageName: ${{ steps.getImageName.outputs.imageName }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get ADOT Image name
+        id: getImageName
+        run: echo "imageName=${{ env.APM_REGISTRY }}/${{ env.APM_PREVIEW_REPO }}:latest" >> "$GITHUB_OUTPUT"
+
+  e2e-canary-test:
+    needs: get-adot-image-name
+    uses: ./.github/workflows/apm-e2e-test.yml
+    secrets: inherit
+    with:
+      test-cluster-name: 'pulse-playground'
+      apm-adot-image-name: ${{ needs.get-adot-image-name.outputs.imageName }}
+      caller-workflow-name: 'apm-e2e-main-build-test'
