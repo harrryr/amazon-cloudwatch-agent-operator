@@ -24,7 +24,7 @@ env:
   TEST_ACCOUNT: 612966150583
   SAMPLE_APP_NAMESPACE: sample-app-namespace
   SAMPLE_APP_IMAGE: 417921506511.dkr.ecr.us-east-1.amazonaws.com/aws-apm-test/aws-apm-java-springboot:latest
-      
+
 jobs:
   apm-e2e-test:
     runs-on: ubuntu-latest
@@ -95,25 +95,24 @@ jobs:
             -var="test_namespace=${{ env.SAMPLE_APP_NAMESPACE }}" \
             -var="service_account_aws_access=service-account-${{ env.TESTING_ID }}" \
             -var="sample_app_image=${{ env.SAMPLE_APP_IMAGE }}"
-            
+
       # Enable APM on the test cluster
       - name: Pull and unzip enablement script from S3
         run: aws s3 cp s3://apm-private-beta/onboarding.zip . && unzip -j onboarding.zip
-        
-      # - name: Change ADOT image if main-build
-      #   if: inputs.caller-workflow-name == 'main-build'
-      #   run: "sed -i 's#image:.*#image: ${{ inputs.apm-adot-image-name }}#g' instrumentation.yaml"
+
+      - name: Set the CW Agent Operator image in the manifest
+        run: yq -i '.spec.template.spec.containers.[].image = "${{ apm-cw-agent-operator-image-name }}"' apm.yaml
 
       - name: Change OTEL_TRACES_SAMPLER to always_on
         run: "sed -i 's#parentbased_traceidratio#always_on#g' instrumentation.yaml"
 
       - name: Enable APM
-        run: | 
+        run: |
           ./enable-apm.sh \
           ${{ inputs.test-cluster-name }} \
           ${{ env. AWS_DEFAULT_REGION }} \
           ${{ env.SAMPLE_APP_NAMESPACE }}
-          
+
       # Application pods need to be restarted for the
       # apm instrumentation to take effect
       - name: Restart the app pods
@@ -189,7 +188,7 @@ jobs:
             --value 1.0 \
             --region us-west-2
           else
-            aws cloudwatch put-metric-data --namespace 'CWAgentOperator/ADOT/GitHubActions' \
+            aws cloudwatch put-metric-data --namespace 'CWAgentOperator/GitHubActions' \
             --metric-name Success \
             --dimensions repository=${{ github.repository }},branch=${{ github.ref_name }},workflow=${{ inputs.caller-workflow-name }} \
             --value 0.0 \
@@ -201,9 +200,9 @@ jobs:
       # Inject code into clean-apm.sh that finds the name of log streams last used more than a day ago and delete them
       - name: Remove log group deletion command
         run: |
-         delete_log_group="aws logs delete-log-group --log-group-name '/aws/apm/eks' --region \$REGION"
-         sed -i "s#$delete_log_group##g" clean-apm.sh      
-            
+          delete_log_group="aws logs delete-log-group --log-group-name '/aws/apm/eks' --region \$REGION"
+          sed -i "s#$delete_log_group##g" clean-apm.sh      
+
       - name: Clean APM
         if: always()
         run: |
@@ -211,7 +210,7 @@ jobs:
           ${{ inputs.test-cluster-name }} \
           ${{ env. AWS_DEFAULT_REGION }} \
           ${{ env.SAMPLE_APP_NAMESPACE }}
-          
+
       - name: Delete outdated log streams
         run: |
           current_timestamp_s=$(date +%s)
@@ -225,7 +224,7 @@ jobs:
             echo "Deleting log stream $logstream"
             aws logs delete-log-stream --log-group-name /aws/apm/eks --log-stream-name $logstream --region us-east-1
           done
-          
+
       - name: Terraform destroy
         if: always()
         continue-on-error: true
