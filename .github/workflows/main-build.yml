@@ -20,5 +20,4 @@ jobs:
     secrets: inherit
     with:
       test-cluster-name: 'pulse-playground'
-      apm-adot-image-name: ${{ needs.get-adot-image-name.outputs.imageName }}
       caller-workflow-name: 'apm-e2e-main-build-test'
