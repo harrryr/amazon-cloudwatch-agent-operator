@@ -102,7 +102,7 @@ jobs:
 
       - name: Set the CW Agent Operator image in the manifest
         if: inputs.caller-workflow-name == 'main-build'
-        run: yq -i '.spec.template.spec.containers.[].image = "${{ apm-cw-agent-operator-image-name }}"' apm.yaml
+        run: yq -i '.spec.template.spec.containers.[].image = "${{ inputs.apm-cw-agent-operator-image-name }}"' apm.yaml
 
       - name: Change OTEL_TRACES_SAMPLER to always_on
         run: "sed -i 's#parentbased_traceidratio#always_on#g' instrumentation.yaml"
