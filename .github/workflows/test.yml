@@ -3,7 +3,8 @@
 
 name: APM Release
 on:
-  push
+  push:
+  workflow_dispatch:
 jobs:
   e2e-test:
     uses: ./.github/workflows/apm-e2e-test.yml
