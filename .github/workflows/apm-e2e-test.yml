@@ -84,7 +84,6 @@ jobs:
       - name: Deploy sample app via terraform
         working-directory: test/terraform/eks
         run: |
-          pwd
           terraform init
           terraform validate
           terraform apply -auto-approve \
