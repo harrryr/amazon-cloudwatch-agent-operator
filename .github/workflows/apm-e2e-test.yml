@@ -1,17 +1,14 @@
 # This is a reusable workflow for running the E2E test for APM.
 # It is meant to be called from another workflow.
 # Read more about reusable workflows: https://docs.github.com/en/actions/using-workflows/reusing-workflows#overview
-name: APM Enablement E2E testing
+name: APM Enablement E2E Testing
 on:
   workflow_call:
     inputs:
       test-cluster-name:
         required: true
         type: string
-      apm-cw-agent-operator-image-name:
-        required: false
-        type: string
-      caller-workflow-name:
+      apm-cwagent-operator-image-name:
         required: true
         type: string
 
@@ -21,9 +18,10 @@ permissions:
 
 env:
   AWS_DEFAULT_REGION: us-east-1
-  TEST_ACCOUNT: 612966150583
+  TEST_ACCOUNT: 417921506511
   SAMPLE_APP_NAMESPACE: sample-app-namespace
-  SAMPLE_APP_IMAGE: 417921506511.dkr.ecr.us-east-1.amazonaws.com/aws-apm-test/aws-apm-java-springboot:latest
+  SAMPLE_APP_FRONTEND_SERVICE_IMAGE: 417921506511.dkr.ecr.us-east-1.amazonaws.com/aws-apm-test/aws-apm-java-springboot:latest
+  SAMPLE_APP_REMOTE_SERVICE_IMAGE: 417921506511.dkr.ecr.us-east-1.amazonaws.com/aws-apm-test/aws-apm-java-springboot-remote-service:latest
 
 jobs:
   apm-e2e-test:
@@ -39,10 +37,10 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: ${{ secrets.E2E_TEST_ROLE_ARN }}
+          role-to-assume: ${{ secrets.APM_E2E_TEST_ROLE_ARN }}
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
-          # local directory to store the kubernetes config
+      # local directory to store the kubernetes config
       - name: Create kubeconfig directory
         run: mkdir -p ${{ github.workspace }}/.kube
 
@@ -84,7 +82,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Deploy sample app via terraform
-        working-directory: testing/terraform/eks
+        working-directory: test/terraform/eks
         run: |
           terraform init
           terraform validate
@@ -94,15 +92,15 @@ jobs:
             -var="eks_cluster_name=${{ inputs.test-cluster-name }}" \
             -var="test_namespace=${{ env.SAMPLE_APP_NAMESPACE }}" \
             -var="service_account_aws_access=service-account-${{ env.TESTING_ID }}" \
-            -var="sample_app_image=${{ env.SAMPLE_APP_IMAGE }}"
+            -var="sample_app_image=${{ env.SAMPLE_APP_FRONTEND_SERVICE_IMAGE }}" \
+            -var="sample_remote_app_image=${{ env.SAMPLE_APP_REMOTE_SERVICE_IMAGE }}"
 
       # Enable APM on the test cluster
       - name: Pull and unzip enablement script from S3
         run: aws s3 cp s3://apm-private-beta/onboarding.zip . && unzip -j onboarding.zip
 
-      - name: Set the CW Agent Operator image in the manifest
-        if: inputs.caller-workflow-name == 'main-build'
-        run: yq -i '.spec.template.spec.containers.[].image = "${{ inputs.apm-cw-agent-operator-image-name }}"' apm.yaml
+#      - name: Set the CW Agent Operator image in the manifest
+#        run: yq -i '.spec.template.spec.containers.[].image = "${{ inputs.apm-cwagent-operator-image-name }}"' apm.yaml
 
       - name: Change OTEL_TRACES_SAMPLER to always_on
         run: "sed -i 's#parentbased_traceidratio#always_on#g' instrumentation.yaml"
@@ -121,9 +119,9 @@ jobs:
 
       - name: Wait for sample app pods to come up
         run: |
-          kubectl wait --for=condition=Ready pod --all -n ${{ env.SAMPLE_APP_NAMESPACE }}
+          kubectl wait --for=condition=Ready pod --all -n ${{ env.SAMPLE_APP_NAMESPACE }} \
 
-      - name: Verify pod Adot image
+      - name: Verify pod ADOT image
         run: |
           kubectl get pods -n ${{ env.SAMPLE_APP_NAMESPACE }} --output json | \
           jq '.items[0].status.initContainerStatuses[0].imageID'
@@ -136,7 +134,7 @@ jobs:
       - name: Get the sample app endpoint
         run: |
           echo "APP_ENDPOINT=$(terraform output sample_app_endpoint)" >> $GITHUB_ENV
-        working-directory: testing/terraform/eks
+        working-directory: test/terraform/eks
 
       - name: Wait for app endpoint to come online
         run: |
@@ -147,16 +145,18 @@ jobs:
               echo "Max attempts reached"
               exit 1
             fi
-
+          
             printf '.'
             attempt_counter=$(($attempt_counter+1))
             sleep 10
           done
 
       # Validation for pulse telemetry data
-      - name: Call endpoints and validate generated metrics
-        id: metric-validation
-        run: ./gradlew testing:validator:run --args='-c metric-validation.yml
+      - name: Call endpoint and validate generated EMF logs
+        id: log-validation
+        working-directory: test/validator
+        run: ./gradlew run --args='-c log-validation.yml
+          --testing-id ${{ env.TESTING_ID }}
           --endpoint http://${{ env.APP_ENDPOINT }}
           --region ${{ env.AWS_DEFAULT_REGION }}
           --account-id ${{ env.TEST_ACCOUNT }}
@@ -164,12 +164,27 @@ jobs:
           --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
           --cluster ${{ inputs.test-cluster-name }}
           --service-name sample-application-${{ env.TESTING_ID }}
+          --rollup'
+
+      - name: Call endpoints and validate generated metrics
+        id: metric-validation
+        if: success() || steps.log-validation.outcome == 'failure'
+        working-directory: test/validator
+        run: ./gradlew run --args='-c metric-validation.yml
+          --endpoint http://${{ env.APP_ENDPOINT }}
+          --region ${{ env.AWS_DEFAULT_REGION }}
+          --account-id ${{ env.TEST_ACCOUNT }}
+          --metric-namespace AWS/APM
+          --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
+          --cluster ${{ inputs.test-cluster-name }}
+          --service-name sample-application-${{ env.TESTING_ID }}
+          --remote-service-name sample-remote-application-${{ env.TESTING_ID }}
           --rollup'
 
       - name: Call endpoints and validate generated traces
-        id: trace-validation
-        if: success() || steps.metric-validation.outcome == 'failure'
-        run: ./gradlew testing:validator:run --args='-c trace-validation.yml
+        if: success() || steps.log-validation.outcome == 'failure' || steps.metric-validation.outcome == 'failure'
+        working-directory: test/validator
+        run: ./gradlew run --args='-c trace-validation.yml
           --endpoint http://${{ env.APP_ENDPOINT }}
           --region ${{ env.AWS_DEFAULT_REGION }}
           --account-id ${{ env.TEST_ACCOUNT }}
@@ -177,32 +192,16 @@ jobs:
           --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
           --cluster ${{ inputs.test-cluster-name }}
           --service-name sample-application-${{ env.TESTING_ID }}
+          --remote-service-name sample-remote-application-${{ env.TESTING_ID }}
           --rollup'
-
-#       - name: Publish metric on test result
-#         if: always()
-#         run: |
-#           if [[ "${{ steps.metric-validation.outcome }}" == "success" && "${{ steps.trace-validation.outcome }}" == "success" ]]; then
-#             aws cloudwatch put-metric-data --namespace 'CWAgentOperator/GitHubActions' \
-#             --metric-name Success \
-#             --dimensions repository=${{ github.repository }},branch=${{ github.ref_name }},workflow=${{ inputs.caller-workflow-name }} \
-#             --value 1.0 \
-#             --region us-west-2
-#           else
-#             aws cloudwatch put-metric-data --namespace 'CWAgentOperator/GitHubActions' \
-#             --metric-name Success \
-#             --dimensions repository=${{ github.repository }},branch=${{ github.ref_name }},workflow=${{ inputs.caller-workflow-name }} \
-#             --value 0.0 \
-#             --region us-west-2
-#           fi
 
       # Clean up Procedures
 
-      # Inject code into clean-apm.sh that finds the name of log streams last used more than a day ago and delete them
       - name: Remove log group deletion command
+        if: always()
         run: |
           delete_log_group="aws logs delete-log-group --log-group-name '/aws/apm/eks' --region \$REGION"
-          sed -i "s#$delete_log_group##g" clean-apm.sh      
+          sed -i "s#$delete_log_group##g" clean-apm.sh       
 
       - name: Clean APM
         if: always()
@@ -212,25 +211,30 @@ jobs:
           ${{ env. AWS_DEFAULT_REGION }} \
           ${{ env.SAMPLE_APP_NAMESPACE }}
 
+      # Find name of log streams last used more than a week ago and delete them
       - name: Delete outdated log streams
+        if: always()
         run: |
-          current_timestamp_s=$(date +%s)
+          current_timestamp_s=$(date -d "7 days ago" +%s)
           current_timestamp_ms=$((current_timestamp_s * 1000))
           queryline='logStreams[?lastEventTimestamp<`'$current_timestamp_ms'`].logStreamName'
           old_logstreams=$(aws logs describe-log-streams --log-group-name /aws/apm/eks --query $queryline --output text)
           read -a logstream_names_array <<< $old_logstreams
-          echo "List of log streams: $logstream_names_array"
           for logstream in "${logstream_names_array[@]}"
           do
             echo "Deleting log stream $logstream"
-            aws logs delete-log-stream --log-group-name /aws/apm/eks --log-stream-name $logstream --region us-east-1
+            aws logs delete-log-stream --log-group-name /aws/apm/eks --log-stream-name $logstream --region ${{ env.AWS_DEFAULT_REGION }}
           done
+
+      # This step also deletes lingering resources from previous test runs
+      - name: Delete all sample app resources
+        run: kubectl delete namespace ${{ env.SAMPLE_APP_NAMESPACE }}
 
       - name: Terraform destroy
         if: always()
         continue-on-error: true
-        working-directory: testing/terraform/eks
         run: |
+          cd test/terraform/eks
           terraform destroy -auto-approve \
             -var="test_id=${{ env.TESTING_ID }}" \
             -var="kube_directory_path=${{ github.workspace }}/.kube" \
@@ -238,16 +242,6 @@ jobs:
             -var="test_namespace=${{ env.SAMPLE_APP_NAMESPACE }}" \
             -var="service_account_aws_access=service-account-${{ env.TESTING_ID }}" \
             -var="sample_app_image=${{ env.SAMPLE_APP_IMAGE }}"
-
-      - name: Remove aws access service account
-        if: always()
-        continue-on-error: true
-        run: |
-          eksctl delete iamserviceaccount \
-          --name service-account-${{ env.TESTING_ID }} \
-          --namespace ${{ env.SAMPLE_APP_NAMESPACE }} \
-          --cluster ${{ inputs.test-cluster-name }} \
-          --region ${{ env.AWS_DEFAULT_REGION }} \
 
       - name: Remove aws access service account
         if: always()

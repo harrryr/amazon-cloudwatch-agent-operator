@@ -1,0 +1,19 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: MIT
+
+name: APM Release
+on:
+  push
+jobs:
+  #  BuildAndUpload:
+  #    uses: ./.github/workflows/build-and-upload.yml
+  #    secrets: inherit
+  #    permissions:
+  #      id-token: write
+  #      contents: read
+
+  e2e-test:
+    uses: ./.github/workflows/apm-e2e-test.yml
+    with:
+      test-cluster-name: 'pulse-cw-agent-operator-test'
+      apm-cwagent-operator-image-name: "506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-pre-release:latest"
