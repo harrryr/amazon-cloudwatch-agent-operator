@@ -5,13 +5,6 @@ name: APM Release
 on:
   push
 jobs:
-  #  BuildAndUpload:
-  #    uses: ./.github/workflows/build-and-upload.yml
-  #    secrets: inherit
-  #    permissions:
-  #      id-token: write
-  #      contents: read
-
   e2e-test:
     uses: ./.github/workflows/apm-e2e-test.yml
     with:
