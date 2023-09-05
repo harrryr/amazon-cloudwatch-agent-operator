@@ -9,5 +9,5 @@ jobs:
   e2e-test:
     uses: ./.github/workflows/apm-e2e-test.yml
     with:
-      test-cluster-name: 'pulse-cw-agent-operator-test'
+      test-cluster-name: 'pulse-playgroundt'
       apm-cwagent-operator-image-name: "506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-pre-release:latest"

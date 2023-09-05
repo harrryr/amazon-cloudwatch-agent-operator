@@ -37,7 +37,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::417921506511:role/pulse-e2e-test-gh-role
+          role-to-assume: arn:aws:iam::417921506511:role/APM-Java-Implementation-Testing
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
       # local directory to store the kubernetes config
