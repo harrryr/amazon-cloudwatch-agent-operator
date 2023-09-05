@@ -13,7 +13,7 @@ on:
         type: string
 
 permissions:
-  id-token: none
+  id-token: write
   contents: read
 
 env:
@@ -37,7 +37,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: arn:aws:iam::417921506511:role/APM-Java-Implementation-Testing
+          role-to-assume: arn:aws:iam::417921506511:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/85ED0051A73C87F430520281FD4C3044
           aws-region: ${{ env.AWS_DEFAULT_REGION }}
 
       # local directory to store the kubernetes config
