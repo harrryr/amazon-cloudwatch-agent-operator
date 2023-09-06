@@ -6,8 +6,8 @@ on:
   push:
   workflow_dispatch:
 jobs:
-  test:
-    uses: actions/checkout@v3
+  testrun:
+    uses: /.github/workflows/actions/checkout@v3
     with:
       fetch-depth: 0
   e2e-test:
