@@ -10,4 +10,4 @@ jobs:
     uses: ./.github/workflows/apm-e2e-test.yml
     with:
       test-cluster-name: 'pulse-cw-agent-operator-test'
-      apm-cwagent-operator-image-name: "506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-pre-release:latest"
+      apm-cwagent-operator-image-name: ${{secrets.TEST}}

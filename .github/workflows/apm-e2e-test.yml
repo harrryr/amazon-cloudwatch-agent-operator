@@ -11,7 +11,7 @@ on:
       apm-cwagent-operator-image-name:
         required: true
         type: string
-
+a
 permissions:
   id-token: write
   contents: read
