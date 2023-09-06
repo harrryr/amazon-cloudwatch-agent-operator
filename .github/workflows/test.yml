@@ -8,11 +8,7 @@ on:
 jobs:
   e2e-test:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     steps:
-
       - uses: ./.github/workflows/apm-e2e-test.yml
         with:
           test-cluster-name: 'pulse-cw-agent-operator-test'
