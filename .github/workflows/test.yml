@@ -13,10 +13,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v3
+        working-directory: ../
         with:
           fetch-depth: 0
-  test:
-    - steps:
       - uses: ./.github/workflows/apm-e2e-test.yml
         with:
           test-cluster-name: 'pulse-cw-agent-operator-test'
