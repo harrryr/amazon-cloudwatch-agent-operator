@@ -7,11 +7,7 @@ on:
   workflow_dispatch:
 jobs:
   testrun:
-    uses: /.github/workflows/actions/checkout@v3
+    uses: actions/checkout@v3
     with:
       fetch-depth: 0
-  e2e-test:
-    uses: ./.github/workflows/apm-e2e-test.yml
-    with:
-      test-cluster-name: 'pulse-cw-agent-operator-test'
-      apm-cwagent-operator-image-name: ${{ secrets.TEST }}
+
