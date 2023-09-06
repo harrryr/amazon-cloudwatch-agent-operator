@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - run: ./apm-e2e-test.yml
-        with:
-          test-cluster-name: 'pulse-cw-agent-operator-test'
-          apm-cwagent-operator-image-name: ${{ secrets.TEST }}
+      - run: | 
+          ./.github/workflows/apm-e2e-test.yml
+          --test-cluster-name 'pulse-cw-agent-operator-test' \
+          --apm-cwagent-operator-image-name ${{ secrets.TEST }}
