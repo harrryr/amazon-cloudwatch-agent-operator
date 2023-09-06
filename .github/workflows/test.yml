@@ -6,8 +6,16 @@ on:
   push:
   workflow_dispatch:
 jobs:
-  testrun:
-    uses: actions/checkout@v3
-    with:
-      fetch-depth: 0
-
+  e2e-test:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: ./apm-e2e-test.yml
+        with:
+          test-cluster-name: 'pulse-cw-agent-operator-test'
+          apm-cwagent-operator-image-name: ${{ secrets.TEST }}
