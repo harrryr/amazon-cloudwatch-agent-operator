@@ -6,6 +6,10 @@ on:
   push:
   workflow_dispatch:
 jobs:
+  test:
+    uses: actions/checkout@v3
+    with:
+      fetch-depth: 0
   e2e-test:
     uses: ./.github/workflows/apm-e2e-test.yml
     with:
