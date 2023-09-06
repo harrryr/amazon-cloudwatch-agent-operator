@@ -3,19 +3,17 @@
 
 name: APM Release
 on:
-  push:
-  workflow_dispatch:
+  push
 jobs:
+  #  BuildAndUpload:
+  #    uses: ./.github/workflows/build-and-upload.yml
+  #    secrets: inherit
+  #    permissions:
+  #      id-token: write
+  #      contents: read
+
   e2e-test:
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - run: | 
-          ./.github/workflows/apm-e2e-test.yml
-          --test-cluster-name 'pulse-cw-agent-operator-test' \
-          --apm-cwagent-operator-image-name ${{ secrets.TEST }}
+    uses: ./.github/workflows/apm-e2e-test.yml
+    with:
+      test-cluster-name: 'pulse-cw-agent-operator-test'
+      apm-cwagent-operator-image-name: '506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-pre-release:latest'

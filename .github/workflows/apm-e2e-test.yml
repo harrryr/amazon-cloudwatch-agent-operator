@@ -11,6 +11,7 @@ on:
       apm-cwagent-operator-image-name:
         required: true
         type: string
+
 permissions:
   id-token: write
   contents: read
@@ -98,8 +99,8 @@ jobs:
       - name: Pull and unzip enablement script from S3
         run: aws s3 cp s3://apm-private-beta/onboarding.zip . && unzip -j onboarding.zip
 
-#      - name: Set the CW Agent Operator image in the manifest
-#        run: yq -i '.spec.template.spec.containers.[].image = "${{ inputs.apm-cwagent-operator-image-name }}"' apm.yaml
+      - name: Set the CW Agent Operator image in the manifest
+        run: yq -i '.spec.template.spec.containers.[].image = "${{ inputs.apm-cwagent-operator-image-name }}"' apm.yaml
 
       - name: Change OTEL_TRACES_SAMPLER to always_on
         run: "sed -i 's#parentbased_traceidratio#always_on#g' instrumentation.yaml"
