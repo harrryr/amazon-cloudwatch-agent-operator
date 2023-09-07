@@ -99,17 +99,18 @@ jobs:
       - name: Pull and unzip enablement script from S3
         run: aws s3 cp s3://apm-private-beta/onboarding.zip . && unzip -j onboarding.zip
 
-#      - name: Set the CW Agent Operator image in the manifest
-#        run: |
-#          cat apm.yaml
-#          yq -i '.spec.template.spec.containers.[].image = "506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-release:latest"' apm.yaml
-#          cat apm.yaml
-
+      - name: Set the CW Agent Operator image in the manifest
+        run: |
+          cat apm.yaml
+          yq -i '.spec.template.spec.containers.[].image = 506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-release' apm.yaml
+          cat apm.yaml
+#
       - name: Change OTEL_TRACES_SAMPLER to always_on
         run: "sed -i 's#parentbased_traceidratio#always_on#g' instrumentation.yaml"
 
       - name: Enable APM
         run: |
+          cat apm.yaml
           ./enable-apm.sh \
           ${{ inputs.test-cluster-name }} \
           ${{ env. AWS_DEFAULT_REGION }} \
