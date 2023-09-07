@@ -105,7 +105,7 @@ jobs:
 #        run: yq -i '.spec.template.spec.containers.[].image = "506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-release"' apm.yaml
 
       - name: Set the CW Agent Operator image in the manifest
-        run: "sed -i 's#${{ env.CW_AGENT_OPERATOR_IMAGE }}#${{ CW_AGENT_OPERATOR_PRE_IMAGE }}#g' apm.yaml"
+        run: "sed -i 's#${{ env.CW_AGENT_OPERATOR_IMAGE }}#${{ env.CW_AGENT_OPERATOR_PRE_IMAGE }}#g' apm.yaml"
 
       - name: Test
         run: cat apm.yaml
