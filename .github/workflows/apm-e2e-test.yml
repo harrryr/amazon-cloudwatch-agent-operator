@@ -99,8 +99,11 @@ jobs:
       - name: Pull and unzip enablement script from S3
         run: aws s3 cp s3://apm-private-beta/onboarding.zip . && unzip -j onboarding.zip
 
+#      - name: Set the CW Agent Operator image in the manifest
+#        run: yq -i '.spec.template.spec.containers.[].image = "506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-release"' apm.yaml
+
       - name: Set the CW Agent Operator image in the manifest
-        run: yq -i '.spec.template.spec.containers.[].image = \\"506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-release\\"' apm.yaml
+        run: "sed -i 's#cwagent-operator-release#cwagent-operator-pre-release#g' apm.yaml"
 
       - name: Test
         run: cat apm.yaml
