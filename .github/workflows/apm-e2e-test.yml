@@ -22,6 +22,8 @@ env:
   SAMPLE_APP_NAMESPACE: sample-app-namespace
   SAMPLE_APP_FRONTEND_SERVICE_IMAGE: 417921506511.dkr.ecr.us-east-1.amazonaws.com/aws-apm-test/aws-apm-java-springboot:latest
   SAMPLE_APP_REMOTE_SERVICE_IMAGE: 417921506511.dkr.ecr.us-east-1.amazonaws.com/aws-apm-test/aws-apm-java-springboot-remote-service:latest
+  CW_AGENT_OPERATOR_IMAGE: 506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-release:latest
+  CW_AGENT_OPERATOR_PRE_IMAGE: 506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-pre-release:latest
 
 jobs:
   apm-e2e-test:
@@ -103,7 +105,7 @@ jobs:
 #        run: yq -i '.spec.template.spec.containers.[].image = "506463145083.dkr.ecr.us-west-2.amazonaws.com/cwagent-operator-release"' apm.yaml
 
       - name: Set the CW Agent Operator image in the manifest
-        run: "sed -i 's#cwagent-operator-release#cwagent-operator-pre-release#g' apm.yaml"
+        run: "sed -i 's#${{ env.CW_AGENT_OPERATOR_IMAGE }}#${{ CW_AGENT_OPERATOR_PRE_IMAGE }}#g' apm.yaml"
 
       - name: Test
         run: cat apm.yaml
