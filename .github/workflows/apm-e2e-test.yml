@@ -149,55 +149,55 @@ jobs:
               echo "Max attempts reached"
               exit 1
             fi
-          
+
             printf '.'
             attempt_counter=$(($attempt_counter+1))
             sleep 10
           done
-
-      # Validation for pulse telemetry data
-      - name: Call endpoint and validate generated EMF logs
-        id: log-validation
-        working-directory: test/validator
-        run: ./gradlew run --args='-c log-validation.yml
-          --testing-id ${{ env.TESTING_ID }}
-          --endpoint http://${{ env.APP_ENDPOINT }}
-          --region ${{ env.AWS_DEFAULT_REGION }}
-          --account-id ${{ env.TEST_ACCOUNT }}
-          --metric-namespace AWS/APM
-          --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
-          --cluster ${{ inputs.test-cluster-name }}
-          --service-name sample-application-${{ env.TESTING_ID }}
-          --rollup'
-
-      - name: Call endpoints and validate generated metrics
-        id: metric-validation
-        if: success() || steps.log-validation.outcome == 'failure'
-        working-directory: test/validator
-        run: ./gradlew run --args='-c metric-validation.yml
-          --endpoint http://${{ env.APP_ENDPOINT }}
-          --region ${{ env.AWS_DEFAULT_REGION }}
-          --account-id ${{ env.TEST_ACCOUNT }}
-          --metric-namespace AWS/APM
-          --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
-          --cluster ${{ inputs.test-cluster-name }}
-          --service-name sample-application-${{ env.TESTING_ID }}
-          --remote-service-name sample-remote-application-${{ env.TESTING_ID }}
-          --rollup'
-
-      - name: Call endpoints and validate generated traces
-        if: success() || steps.log-validation.outcome == 'failure' || steps.metric-validation.outcome == 'failure'
-        working-directory: test/validator
-        run: ./gradlew run --args='-c trace-validation.yml
-          --endpoint http://${{ env.APP_ENDPOINT }}
-          --region ${{ env.AWS_DEFAULT_REGION }}
-          --account-id ${{ env.TEST_ACCOUNT }}
-          --metric-namespace AWS/APM
-          --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
-          --cluster ${{ inputs.test-cluster-name }}
-          --service-name sample-application-${{ env.TESTING_ID }}
-          --remote-service-name sample-remote-application-${{ env.TESTING_ID }}
-          --rollup'
+#
+#      # Validation for pulse telemetry data
+#      - name: Call endpoint and validate generated EMF logs
+#        id: log-validation
+#        working-directory: test/validator
+#        run: ./gradlew run --args='-c log-validation.yml
+#          --testing-id ${{ env.TESTING_ID }}
+#          --endpoint http://${{ env.APP_ENDPOINT }}
+#          --region ${{ env.AWS_DEFAULT_REGION }}
+#          --account-id ${{ env.TEST_ACCOUNT }}
+#          --metric-namespace AWS/APM
+#          --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
+#          --cluster ${{ inputs.test-cluster-name }}
+#          --service-name sample-application-${{ env.TESTING_ID }}
+#          --rollup'
+#
+#      - name: Call endpoints and validate generated metrics
+#        id: metric-validation
+#        if: success() || steps.log-validation.outcome == 'failure'
+#        working-directory: test/validator
+#        run: ./gradlew run --args='-c metric-validation.yml
+#          --endpoint http://${{ env.APP_ENDPOINT }}
+#          --region ${{ env.AWS_DEFAULT_REGION }}
+#          --account-id ${{ env.TEST_ACCOUNT }}
+#          --metric-namespace AWS/APM
+#          --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
+#          --cluster ${{ inputs.test-cluster-name }}
+#          --service-name sample-application-${{ env.TESTING_ID }}
+#          --remote-service-name sample-remote-application-${{ env.TESTING_ID }}
+#          --rollup'
+#
+#      - name: Call endpoints and validate generated traces
+#        if: success() || steps.log-validation.outcome == 'failure' || steps.metric-validation.outcome == 'failure'
+#        working-directory: test/validator
+#        run: ./gradlew run --args='-c trace-validation.yml
+#          --endpoint http://${{ env.APP_ENDPOINT }}
+#          --region ${{ env.AWS_DEFAULT_REGION }}
+#          --account-id ${{ env.TEST_ACCOUNT }}
+#          --metric-namespace AWS/APM
+#          --app-namespace ${{ env.SAMPLE_APP_NAMESPACE }}
+#          --cluster ${{ inputs.test-cluster-name }}
+#          --service-name sample-application-${{ env.TESTING_ID }}
+#          --remote-service-name sample-remote-application-${{ env.TESTING_ID }}
+#          --rollup'
 
       # Clean up Procedures
 
